@@ -87,22 +87,29 @@ passport.deserializeUser(async (id, done) => {
   };
 });
 
-app.post(
-  "/log-in",
-  passport.authenticate("local"), function(req, res, next) {
-    if(req.user) {
-      jwt.sign({user: req.user}, `${process.env.JWT_KEY}`, (err, token) => {
-        res.json({
-          token
-        });
-      });
-    } else {
-      // handle errors here, decide what you want to send back to your front end
-      // so that it knows the user wasn't found
-      res.statusCode = 503;
-      res.send({message: 'Not Found'})
+app.post("/log-in", (req, res, next) => {
+  passport.authenticate("local", (err, user, info) => {
+    if (err) {
+      return next(err);
     }
-  });
+    if (!user) {
+      // Authentication failed
+      return res.status(401).send({ message: info.message });
+    }
+    req.logIn(user, (err) => {
+      if (err) {
+        return next(err);
+      }
+      // User authenticated successfully, generate JWT
+      jwt.sign({ user: user }, process.env.JWT_KEY, (err, token) => {
+        if (err) {
+          return next(err);
+        }
+        return res.json({ token });
+      });
+    });
+  })(req, res, next);
+});
 
 app.get("/log-out", (req, res, next) => {
   req.logout((err) => {
