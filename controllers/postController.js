@@ -153,7 +153,7 @@ exports.post_post = [
   exports.post_detail = asyncHandler(async (req, res, next) => {
     // Get details of post and all their comments (in parallel)
     const [post, allCommentsForPost] = await Promise.all([
-      Post.findById(req.params.id).exec(),
+      Post.findById(req.params.id).populate("user").exec(),
       Comment.find({ post: req.params.id }).exec(),
     ]);
   
@@ -167,6 +167,13 @@ exports.post_post = [
     res.json({
       title: "Post Detail",
       post: post,
+      _id: post._id,
+      iconUrl: post.user.iconUrl,
+      user: post.user,
+      name: post.name,
+      date: post.date,
+      text: post.text,
+      imgUrl: post.imgUrl,
       post_comments: allCommentsForPost,
     });
 });
